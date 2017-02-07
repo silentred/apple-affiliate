@@ -1,0 +1,65 @@
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+var (
+	workers []*fetchWorker
+)
+
+const (
+	limit = 100
+)
+
+type job struct {
+	from   time.Time
+	to     time.Time
+	offset int
+	limit  int
+}
+
+func seperateJobs(fromDateStr, toDateStr string, jobNum int) ([]job, error) {
+	fromTime, err := strToTime(fromDateStr)
+	toTime, err := strToTime(toDateStr)
+	if err != nil {
+		return nil, err
+	}
+
+	diff := toTime.Unix() - fromTime.Unix()
+	interval := int(diff) / jobNum
+	if interval <= 0 {
+		return nil, fmt.Errorf("jobNum is too big or fromDate is too close to toDate")
+	}
+
+	result := make([]job, 0, jobNum)
+	for i := 0; i < jobNum; i++ {
+		job := job{
+			from:   fromTime.Add(time.Duration(i*interval) * time.Second),
+			to:     fromTime.Add(time.Duration((i+1)*interval) * time.Second),
+			offset: 0,
+			limit:  limit,
+		}
+
+		result = append(result, job)
+	}
+
+	result[len(result)-1].to = toTime
+
+	return result, nil
+}
+
+func strToTime(timeStr string) (time.Time, error) {
+	return time.Parse("2006-01-02T15:04:05", timeStr)
+}
+
+func gotoxy(x, y int) {
+	fmt.Printf("\033[%d;%dH", x, y)
+}
+
+func updateStdout() {
+	//\033[0;0H
+	//\033[H\033[J
+	fmt.Printf("\033[H\033[J")
+}
