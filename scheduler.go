@@ -85,6 +85,8 @@ func (sch *scheduler) rescheduleJob() error {
 
 func (sch *scheduler) printProcess() {
 	var allStop bool
+	var totalSavedItemNum, totalItemNum int
+
 	start := time.Now()
 	ticker := time.NewTicker(time.Second)
 
@@ -102,6 +104,13 @@ func (sch *scheduler) printProcess() {
 			break
 		}
 	}
+
+	for _, w := range sch.workers {
+		totalItemNum += w.fetechedItemNum
+		totalSavedItemNum += w.savedItemNum
+	}
+
+	fmt.Printf("total: %d , total save: %d \n", totalItemNum, totalSavedItemNum)
 }
 
 func printHeader() {
