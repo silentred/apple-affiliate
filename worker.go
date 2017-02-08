@@ -8,18 +8,18 @@ import (
 
 	"encoding/json"
 
-	"github.com/HelloWorldDev/be-service/util"
+	"flag"
+
+	"strconv"
+
 	"github.com/golang/glog"
 )
 
-import "strconv"
-
 var (
-	workerNum int
-	workerID  int
-
 	appKey = ""
 	apiKey = ""
+
+	statusNames map[int]string
 )
 
 const (
@@ -39,43 +39,64 @@ type fetchWorker struct {
 	fetechedItemNum int
 	savedItemNum    int
 	// job
-	currJob *job
+	currJob job
 	// stop signal
 	stop chan struct{}
 }
 
-func NewFetchWorker(j *job) *fetchWorker {
+func init() {
+	flag.StringVar(&appKey, "appKey", "", "appKey of apple")
+	flag.StringVar(&apiKey, "apiKey", "", "apiKey of apple")
+
+	statusNames = map[int]string{
+		statusStop:    "stop",
+		statusRunning: "running",
+		statusError:   "error",
+	}
+}
+
+func newFetchWorker(j job, sch *scheduler) *fetchWorker {
 	w := &fetchWorker{
-		id:      workerID,
+		id:      sch.workerID,
 		status:  statusStop,
 		currJob: j,
-		stop:    make(chan struct{}),
+		stop:    make(chan struct{}, 1),
 	}
 
-	workerID++
-	workerNum++
+	sch.workerID++
 
 	return w
 }
 
+func (w *fetchWorker) statusName() string {
+	return statusNames[w.status]
+}
+
 func (w *fetchWorker) Run() {
-	//add self to slice
+	w.status = statusRunning
 	for {
 		select {
 		case <-w.stop:
-			break
+			return
 		default:
 			// do default
-			_, hasNext := w.DoJob()
+			_, hasNext := w.doJob()
 			if hasNext {
 				w.currJob.offset += w.currJob.limit
+			} else {
+				w.stopWorker()
 			}
 		}
 	}
-	// remove self out of slice
 }
 
-func (w *fetchWorker) DoJob() (error, bool) {
+func (w *fetchWorker) stopWorker() {
+	w.stop <- struct{}{}
+	// change status
+	w.status = statusStop
+}
+
+func (w *fetchWorker) doJob() (error, bool) {
 	body, err := w.fetchAppleAPI()
 	if err != nil {
 		glog.Error(err)
@@ -94,18 +115,19 @@ func (w *fetchWorker) DoJob() (error, bool) {
 func (w *fetchWorker) fetchAppleAPI() ([]byte, error) {
 	var url, basicAuth string
 	params := map[string]string{
-		"offset":     strconv.Itoa(w.currJob.offset),
-		"limit":      strconv.Itoa(w.currJob.limit),
-		"start_date": w.currJob.from.Format("2006-01-02 15:04:05"),
-		"end_date":   w.currJob.to.Format("2006-01-02 15:04:05"),
+		"convert_currency": "USD",
+		"offset":           strconv.Itoa(w.currJob.offset),
+		"limit":            strconv.Itoa(w.currJob.limit),
+		"start_date":       w.currJob.from.Format("2006-01-02 15:04:05"),
+		"end_date":         w.currJob.to.Format("2006-01-02 15:04:05"),
 	}
 
-	c := util.NewReqeustConfig(params, nil, 90, nil, nil)
+	c := NewReqeustConfig(params, nil, 90, nil, nil)
 
 	basicAuth = fmt.Sprintf("%s:%s", appKey, apiKey)
 	url = fmt.Sprintf(apiUrl, basicAuth, publisherID)
 
-	body, _, err := util.HTTPGet(url, c)
+	body, _, err := HTTPGet(url, c)
 	if err != nil {
 		return nil, err
 	}

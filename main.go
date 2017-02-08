@@ -1,6 +1,9 @@
 package main
 
-import "flag"
+import (
+	"flag"
+	"log"
+)
 
 var (
 	fromDateStr string
@@ -27,4 +30,13 @@ func init() {
 func main() {
 	flag.Parse()
 	InitDB(mysqlHost, mysqlUser, mysqlPwd, mysqlDB)
+
+	jobs, err := seperateJobs(fromDateStr, toDateStr, jobNum)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	sch := newScheduler(jobNum)
+	sch.receiveJobs(jobs)
+	sch.printProcess()
 }

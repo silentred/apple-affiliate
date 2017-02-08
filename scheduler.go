@@ -2,11 +2,8 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"time"
-)
-
-var (
-	workers []*fetchWorker
 )
 
 const (
@@ -18,6 +15,59 @@ type job struct {
 	to     time.Time
 	offset int
 	limit  int
+}
+
+type scheduler struct {
+	workerID int
+	workers  []*fetchWorker
+	mutex    sync.Mutex
+}
+
+func newScheduler(num int) *scheduler {
+	sch := &scheduler{
+		workers: make([]*fetchWorker, 0, num),
+		mutex:   sync.Mutex{},
+	}
+
+	return sch
+}
+
+func (sch *scheduler) receiveJobs(jobs []job) {
+	for _, j := range jobs {
+		w := newFetchWorker(j, sch)
+		sch.appendWorker(w)
+	}
+
+	for _, worker := range sch.workers {
+		go worker.Run()
+	}
+}
+
+func (sch *scheduler) appendWorker(w *fetchWorker) {
+	sch.mutex.Lock()
+	sch.workers = append(sch.workers, w)
+	sch.mutex.Unlock()
+}
+
+func (sch *scheduler) printProcess() {
+	start := time.Now()
+	ticker := time.NewTicker(time.Second)
+	for range ticker.C {
+		updateStdout()
+		printHeader()
+		for _, w := range sch.workers {
+			printWorker(w)
+		}
+		fmt.Println(time.Now().Sub(start))
+	}
+}
+
+func printHeader() {
+	fmt.Printf("ID \t Status \t Offset \t Item \t SavedItem \n")
+}
+
+func printWorker(w *fetchWorker) {
+	fmt.Printf("%d \t %s \t %d \t %d \t %d \n", w.id, w.statusName(), w.currJob.offset, w.fetechedItemNum, w.savedItemNum)
 }
 
 func seperateJobs(fromDateStr, toDateStr string, jobNum int) ([]job, error) {

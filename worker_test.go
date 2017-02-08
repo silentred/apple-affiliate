@@ -10,6 +10,8 @@ import (
 
 func TestWorker(t *testing.T) {
 	InitDB("127.0.0.1:3306", "jason", "jason", "fenda")
+	appKey = "yYit5mQdd1"
+	apiKey = "SHba2kUI"
 
 	end := time.Now().UTC()
 	start := end.Add(-60 * time.Minute)
@@ -29,7 +31,7 @@ func TestWorker(t *testing.T) {
 		currJob: j,
 	}
 
-	err, hasNext := worker.DoJob()
+	err, hasNext := worker.doJob()
 	assert.NoError(t, err)
 	assert.Equal(t, true, hasNext)
 }
