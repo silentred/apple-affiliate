@@ -75,11 +75,11 @@ func (sch *scheduler) printProcess() {
 }
 
 func printHeader() {
-	fmt.Printf("ID \t Status \t Offset \t Item \t SavedItem \n")
+	fmt.Printf("ID \t Status \t Offset \t Item \t SavedItem \t Range \n")
 }
 
 func printWorker(w *fetchWorker) {
-	fmt.Printf("%d \t %s \t %d \t %d \t %d \n", w.id, w.statusName(), w.currJob.offset, w.fetechedItemNum, w.savedItemNum)
+	fmt.Printf("%d \t %s \t %d \t %d \t %d \t %s \n", w.id, w.statusName(), w.currJob.offset, w.fetechedItemNum, w.savedItemNum, w.currJob.String())
 }
 
 func seperateJobs(fromDateStr, toDateStr string, jobNum int) ([]job, error) {
