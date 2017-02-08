@@ -31,7 +31,13 @@ func main() {
 	flag.Parse()
 	InitDB(mysqlHost, mysqlUser, mysqlPwd, mysqlDB)
 
-	jobs, err := seperateJobs(fromDateStr, toDateStr, jobNum)
+	fromTime, err := strToTime(fromDateStr)
+	toTime, err := strToTime(toDateStr)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	jobs, err := seperateJobs(fromTime, toTime, jobNum)
 	if err != nil {
 		log.Fatalln(err)
 	}

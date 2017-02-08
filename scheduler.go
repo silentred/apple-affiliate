@@ -53,6 +53,36 @@ func (sch *scheduler) appendWorker(w *fetchWorker) {
 	sch.mutex.Unlock()
 }
 
+func (sch *scheduler) rescheduleJob() error {
+	var stoppedWorker, runningWorker *fetchWorker
+
+	for _, w := range sch.workers {
+		if w.status == statusStop {
+			stoppedWorker = w
+		}
+
+		if runningWorker == nil && longerThan(w.lastConvTime, w.currJob.to, time.Hour) && (w.status == statusRunning) {
+			runningWorker = w
+		}
+	}
+
+	if runningWorker != nil && stoppedWorker != nil {
+		jobs, err := seperateJobs(runningWorker.lastConvTime, runningWorker.currJob.to, 2)
+		if err != nil {
+			return err
+		}
+		if len(jobs) == 2 {
+			stoppedWorker.currJob = jobs[0]
+			runningWorker.currJob = jobs[1]
+			go stoppedWorker.Run()
+		} else {
+			return fmt.Errorf("jobs length is not 2; %#v", jobs)
+		}
+	}
+
+	return nil
+}
+
 func (sch *scheduler) printProcess() {
 	var allStop bool
 	start := time.Now()
@@ -82,13 +112,7 @@ func printWorker(w *fetchWorker) {
 	fmt.Printf("%d \t %s \t %d \t %d \t %d \t %s \n", w.id, w.statusName(), w.currJob.offset, w.fetechedItemNum, w.savedItemNum, w.currJob.String())
 }
 
-func seperateJobs(fromDateStr, toDateStr string, jobNum int) ([]job, error) {
-	fromTime, err := strToTime(fromDateStr)
-	toTime, err := strToTime(toDateStr)
-	if err != nil {
-		return nil, err
-	}
-
+func seperateJobs(fromTime, toTime time.Time, jobNum int) ([]job, error) {
 	diff := toTime.Unix() - fromTime.Unix()
 	interval := int(diff) / jobNum
 	if interval <= 0 {
@@ -124,4 +148,8 @@ func updateStdout() {
 	//\033[0;0H
 	//\033[H\033[J
 	fmt.Printf("\033[H\033[J")
+}
+
+func longerThan(from, to time.Time, d time.Duration) bool {
+	return to.Sub(from) > d
 }

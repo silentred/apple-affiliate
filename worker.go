@@ -39,9 +39,11 @@ type fetchWorker struct {
 	fetechedItemNum int
 	savedItemNum    int
 	// job
-	currJob job
+	currJob      job
+	lastConvTime time.Time
 	// stop signal
 	stop chan struct{}
+	sch  *scheduler
 }
 
 func init() {
@@ -61,6 +63,7 @@ func newFetchWorker(j job, sch *scheduler) *fetchWorker {
 		status:  statusStop,
 		currJob: j,
 		stop:    make(chan struct{}, 1),
+		sch:     sch,
 	}
 
 	sch.workerID++
@@ -94,6 +97,10 @@ func (w *fetchWorker) stopWorker() {
 	w.stop <- struct{}{}
 	// change status
 	w.status = statusStop
+	err := w.sch.rescheduleJob()
+	if err != nil {
+		glog.Error(err)
+	}
 }
 
 func (w *fetchWorker) doJob() (error, bool) {
@@ -174,6 +181,8 @@ func (w *fetchWorker) resolveConversions(body []byte) (error, bool) {
 			glog.Error(err)
 			continue
 		}
+		w.lastConvTime = c.ConversionTime
+
 		w.fetechedItemNum++
 		// insert to db
 		if c.ConversionValue > 0 {
