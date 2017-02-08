@@ -10,15 +10,15 @@ import (
 
 func TestWorker(t *testing.T) {
 	InitDB("127.0.0.1:3306", "jason", "jason", "fenda")
-	appKey = "yYit5mQdd1"
-	apiKey = "SHba2kUI"
+	appKey = "" // set manually
+	apiKey = ""
 
 	end := time.Now().UTC()
 	start := end.Add(-60 * time.Minute)
 	fmt.Println(start)
 	fmt.Println(end)
 
-	j := &job{
+	j := job{
 		from:   start,
 		to:     end,
 		offset: 0,

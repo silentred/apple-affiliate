@@ -17,6 +17,10 @@ type job struct {
 	limit  int
 }
 
+func (j job) String() string {
+	return fmt.Sprintf("-from=%s -to=%s -offset=%d", j.from.Format("2006-01-02T15:04:05"), j.to.Format("2006-01-02T15:04:05"), j.offset)
+}
+
 type scheduler struct {
 	workerID int
 	workers  []*fetchWorker
@@ -50,15 +54,23 @@ func (sch *scheduler) appendWorker(w *fetchWorker) {
 }
 
 func (sch *scheduler) printProcess() {
+	var allStop bool
 	start := time.Now()
 	ticker := time.NewTicker(time.Second)
+
 	for range ticker.C {
 		updateStdout()
 		printHeader()
 		for _, w := range sch.workers {
 			printWorker(w)
+			allStop = true
+			allStop = allStop && (w.status == statusStop)
 		}
 		fmt.Println(time.Now().Sub(start))
+
+		if allStop {
+			break
+		}
 	}
 }
 

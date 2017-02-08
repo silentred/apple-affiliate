@@ -97,10 +97,25 @@ func (w *fetchWorker) stopWorker() {
 }
 
 func (w *fetchWorker) doJob() (error, bool) {
-	body, err := w.fetchAppleAPI()
+	var err error
+	var body []byte
+	var retry = 3
+	var needRetry = true
+
+	for retry > 0 && needRetry {
+		body, err = w.fetchAppleAPI()
+		if err != nil {
+			glog.Error(err)
+			retry--
+		} else {
+			needRetry = false
+		}
+	}
+
 	if err != nil {
-		glog.Error(err)
-		return err, false
+		// TODO log error job
+		glog.Error(w.currJob.String())
+		return err, true
 	}
 
 	err, hasNext := w.resolveConversions(body)
@@ -148,6 +163,11 @@ func (w *fetchWorker) resolveConversions(body []byte) (error, bool) {
 		hasNext = true
 	}
 
+	if len(list.Conversions) == 0 {
+		// TODO log api error
+		glog.Error(w.currJob.String())
+	}
+
 	for _, item := range list.Conversions {
 		c, err := item.ConvData.toConversion()
 		if err != nil {
@@ -160,6 +180,12 @@ func (w *fetchWorker) resolveConversions(body []byte) (error, bool) {
 			conv, _ := findByConversionID(c.ConversionTime, c.ConversionID)
 			if conv == nil {
 				err = c.insert()
+				if err != nil {
+					glog.Error(err)
+					continue
+				}
+			} else {
+				err = conv.update(item.ConvData.Value.Status, item.ConvData.Value.Value)
 				if err != nil {
 					glog.Error(err)
 					continue

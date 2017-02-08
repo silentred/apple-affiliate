@@ -70,12 +70,24 @@ func (c *conversion) insert() error {
 	return err
 }
 
+func (c *conversion) update(status string, conversionVal float32) error {
+	tableName := c.TableName()
+	sql := fmt.Sprintf(`update %s set conversion_status=?, conversion_value=? where id = ? `, tableName)
+	_, err := MysqlORM.Raw(sql, status, conversionVal, c.ID).Exec()
+	if err != nil {
+		glog.Error(err)
+		return err
+	}
+
+	return nil
+}
+
 func findByConversionID(date time.Time, conversionID string) (*conversion, error) {
 	c := conversion{}
 	c.ConversionTime = date
 	tableName := c.TableName()
 
-	sql := fmt.Sprintf(`select id from %s where conversion_id = ?`, tableName)
+	sql := fmt.Sprintf(`select id, conversion_time from %s where conversion_id = ?`, tableName)
 	err := MysqlORM.Raw(sql, conversionID).QueryRow(&c)
 	if err != nil {
 		if err != orm.ErrNoRows {
