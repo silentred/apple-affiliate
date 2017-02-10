@@ -82,6 +82,10 @@ func (c *conversion) update(status string, conversionVal float32) error {
 	return nil
 }
 
+func (c *conversion) udpateApplePaymentStatus(applePayed byte) error {
+	return nil
+}
+
 func findByConversionID(date time.Time, conversionID string) (*conversion, error) {
 	c := conversion{}
 	c.ConversionTime = date
