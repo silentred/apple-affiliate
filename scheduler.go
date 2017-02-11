@@ -83,6 +83,22 @@ func (sch *scheduler) rescheduleJob() error {
 	return nil
 }
 
+func (sch *scheduler) totalProcess(info *fetchInfo) {
+	var offset, fetched, saved, stopWorkerNum, workerNum int
+	for _, w := range sch.workers {
+		workerNum++
+		offset += w.currJob.offset
+		fetched += w.fetechedItemNum
+		saved += w.savedItemNum
+		stopWorkerNum += w.status
+	}
+	info.Offset = offset
+	info.FetchedNum = fetched
+	info.SavedNum = saved
+	info.StopNum = stopWorkerNum
+	info.WorkerNum = workerNum
+}
+
 func (sch *scheduler) printProcess() {
 	var allStop bool
 	var totalSavedItemNum, totalItemNum int

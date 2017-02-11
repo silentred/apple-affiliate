@@ -14,6 +14,10 @@ var (
 	mysqlUser string
 	mysqlPwd  string
 	mysqlDB   string
+
+	isWeb bool
+
+	Scheduler *scheduler
 )
 
 func init() {
@@ -25,12 +29,23 @@ func init() {
 	flag.StringVar(&mysqlUser, "user", "root", "mysql user")
 	flag.StringVar(&mysqlPwd, "pwd", "", "mysql password")
 	flag.StringVar(&mysqlDB, "db", "fenda", "mysql db")
+
+	flag.BoolVar(&isWeb, "web", false, "use web interface")
 }
 
 func main() {
 	flag.Parse()
 	InitDB(mysqlHost, mysqlUser, mysqlPwd, mysqlDB)
+	Scheduler = newScheduler(jobNum)
 
+	if !isWeb {
+		startCmd()
+	} else {
+		startWeb()
+	}
+}
+
+func startCmd() {
 	fromTime, err := strToTime(fromDateStr)
 	toTime, err := strToTime(toDateStr)
 	if err != nil {
@@ -42,7 +57,6 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	sch := newScheduler(jobNum)
-	sch.receiveJobs(jobs)
-	sch.printProcess()
+	Scheduler.receiveJobs(jobs)
+	Scheduler.printProcess()
 }
