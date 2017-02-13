@@ -14,7 +14,9 @@ func TestParseTime(t *testing.T) {
 }
 
 func TestJobs(t *testing.T) {
-	jobs, err := seperateJobs("2017-02-01T00:00:00", "2017-02-07T00:00:00", 4)
+	fromTime, _ := strToTimeNoT("2017-02-13 00:00:00")
+	toTime, _ := strToTimeNoT("2017-02-13 23:59:59")
+	jobs, err := seperateJobs(fromTime, toTime, 4)
 	assert.NoError(t, err)
 	for _, val := range jobs {
 		from := val.from.Format("2006-01-02T15:04:05")

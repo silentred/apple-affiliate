@@ -59,11 +59,12 @@ func init() {
 
 func newFetchWorker(j job, sch *scheduler) *fetchWorker {
 	w := &fetchWorker{
-		id:      sch.workerID,
-		status:  statusStop,
-		currJob: j,
-		stop:    make(chan struct{}, 1),
-		sch:     sch,
+		id:           sch.workerID,
+		status:       statusStop,
+		currJob:      j,
+		stop:         make(chan struct{}, 1),
+		sch:          sch,
+		lastConvTime: j.from,
 	}
 
 	sch.workerID++

@@ -56,6 +56,9 @@ func (sch *scheduler) appendWorker(w *fetchWorker) {
 func (sch *scheduler) rescheduleJob() error {
 	var stoppedWorker, runningWorker *fetchWorker
 
+	sch.mutex.Lock()
+	defer sch.mutex.Unlock()
+
 	for _, w := range sch.workers {
 		if w.status == statusStop {
 			stoppedWorker = w
@@ -163,6 +166,10 @@ func seperateJobs(fromTime, toTime time.Time, jobNum int) ([]job, error) {
 
 func strToTime(timeStr string) (time.Time, error) {
 	return time.Parse("2006-01-02T15:04:05", timeStr)
+}
+
+func strToTimeNoT(timeStr string) (time.Time, error) {
+	return time.Parse("2006-01-02 15:04:05", timeStr)
 }
 
 func gotoxy(x, y int) {

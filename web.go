@@ -59,6 +59,11 @@ func startFetching(cxt echo.Context) error {
 		return err
 	}
 
+	cxt.Response().Header().Add("Access-Control-Allow-Origin", "*")
+
+	// reset info
+	info = fetchInfo{}
+
 	if info.isWorking() {
 		cxt.JSON(403, echo.Map{
 			"error_code": 1,
@@ -67,17 +72,17 @@ func startFetching(cxt echo.Context) error {
 		return nil
 	}
 
-	fromTime, err := strToTime(job.FromDate)
-	toTime, err := strToTime(job.ToDate)
+	fromTime, err := strToTimeNoT(job.FromDate)
+	toTime, err := strToTimeNoT(job.ToDate)
 	if err != nil {
-		cxt.JSON(403, echo.Map{
+		return cxt.JSON(403, echo.Map{
 			"error_code": 2,
 			"message":    err,
 		})
 	}
 	jobs, err := seperateJobs(fromTime, toTime, jobNum)
 	if err != nil {
-		cxt.JSON(403, echo.Map{
+		return cxt.JSON(403, echo.Map{
 			"error_code": 2,
 			"message":    err,
 		})
@@ -93,14 +98,13 @@ func startFetching(cxt echo.Context) error {
 func showStatus(c echo.Context) error {
 	websocket.Handler(func(ws *websocket.Conn) {
 		defer ws.Close()
-		for {
-			// Write
-			for range ticker.C {
-				Scheduler.totalProcess(&info)
-				err := websocket.Message.Send(ws, info.String())
-				if err != nil {
-					log.Fatal(err)
-				}
+		// Write
+		for range ticker.C {
+			Scheduler.totalProcess(&info)
+			err := websocket.Message.Send(ws, info.String())
+			if err != nil {
+				log.Printf("%#v \n", err)
+				break
 			}
 		}
 	}).ServeHTTP(c.Response(), c.Request())
