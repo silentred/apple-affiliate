@@ -11,7 +11,7 @@ var (
 )
 
 type conversionRaw struct {
-	ID           int       `orm:"column(id);"`
+	ID           int       `orm:"column(id);pk"`
 	RawData      string    `orm:"column(raw_data)"`
 	ConversionID string    `orm:"column(conversion_id)"`
 	CreatedAt    time.Time `orm:"column(created_at);type(timestamp)"`
@@ -52,6 +52,10 @@ func (c *conversion) TableName() string {
 	return fmt.Sprintf("affi_conversion_%s", c.ConversionTime.Format("200601"))
 }
 
+func getConvTableNameByTime(date time.Time) string {
+	return fmt.Sprintf("affi_conversion_%s", date.Format("200601"))
+}
+
 func (c *conversion) insert() error {
 	sql := `INSERT INTO %s 
     (conversion_id, conversion_time, uid, app_id, customer_reference,
@@ -82,10 +86,6 @@ func (c *conversion) update(status string, conversionVal float32) error {
 	return nil
 }
 
-func (c *conversion) udpateApplePaymentStatus(applePayed byte) error {
-	return nil
-}
-
 func findByConversionID(date time.Time, conversionID string) (*conversion, error) {
 	c := conversion{}
 	c.ConversionTime = date
@@ -111,6 +111,7 @@ func InitDB(host, user, pwd, db string) orm.Ormer {
 		// register model
 		orm.RegisterModel(new(conversion))
 		orm.RegisterModel(new(conversionRaw))
+		orm.RegisterModel(new(applePayment))
 
 		MysqlORM = orm.NewOrm()
 	}

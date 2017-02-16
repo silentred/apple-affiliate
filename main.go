@@ -37,6 +37,7 @@ func main() {
 	flag.Parse()
 	InitDB(mysqlHost, mysqlUser, mysqlPwd, mysqlDB)
 	Scheduler = newScheduler(jobNum)
+	Scheduler.createWorker(jobNum)
 
 	if !isWeb {
 		startCmd()

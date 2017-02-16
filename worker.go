@@ -195,10 +195,12 @@ func (w *fetchWorker) resolveConversions(body []byte) (error, bool) {
 					continue
 				}
 			} else {
-				err = conv.update(item.ConvData.Value.Status, item.ConvData.Value.Value)
-				if err != nil {
-					glog.Error(err)
-					continue
+				if item.ConvData.Value.Status != c.ConversionStatus {
+					err = conv.update(item.ConvData.Value.Status, item.ConvData.Value.Value)
+					if err != nil {
+						glog.Error(err)
+						continue
+					}
 				}
 			}
 		}

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 const (
@@ -36,10 +38,21 @@ func newScheduler(num int) *scheduler {
 	return sch
 }
 
-func (sch *scheduler) receiveJobs(jobs []job) {
-	for _, j := range jobs {
-		w := newFetchWorker(j, sch)
+func (sch *scheduler) createWorker(workerNum int) {
+	for i := 0; i < workerNum; i++ {
+		w := newFetchWorker(job{}, sch)
 		sch.appendWorker(w)
+	}
+}
+
+func (sch *scheduler) receiveJobs(jobs []job) {
+	if len(jobs) > len(sch.workers) {
+		glog.Error("jobs.length is larger sch.workers")
+		return
+	}
+
+	for i := 0; i < len(sch.workers); i++ {
+		sch.workers[i].currJob = jobs[i]
 	}
 
 	for _, worker := range sch.workers {

@@ -9,6 +9,8 @@ import (
 
 	"encoding/json"
 
+	"strconv"
+
 	"github.com/golang/glog"
 	"github.com/labstack/echo"
 )
@@ -18,6 +20,8 @@ var (
 
 	ticker = time.NewTicker(time.Second)
 	info   fetchInfo
+
+	ipt *importer
 )
 
 type fetchInfo struct {
@@ -43,11 +47,20 @@ func (f *fetchInfo) isWorking() bool {
 }
 
 func startWeb() {
+	initImporter()
+
 	engine = echo.New()
 	engine.POST("/job/fetch", startFetching)
 	engine.GET("/status", showStatus)
+	engine.POST("/job/import", importApplePaymentData)
+	engine.GET("/import/warning", getImporterErrors)
 
 	log.Fatal(engine.Start(":7100"))
+}
+
+func initImporter() {
+	ipt = newImporter("/tmp")
+	go ipt.Start()
 }
 
 // POST recieve job
@@ -65,27 +78,27 @@ func startFetching(cxt echo.Context) error {
 	info = fetchInfo{}
 
 	if info.isWorking() {
-		cxt.JSON(403, echo.Map{
-			"error_code": 1,
-			"message":    "scheduler is working",
-		})
+		cxt.JSON(403, echo.Map{"error_code": 1, "message": "scheduler is working"})
 		return nil
 	}
 
 	fromTime, err := strToTimeNoT(job.FromDate)
 	toTime, err := strToTimeNoT(job.ToDate)
+
 	if err != nil {
-		return cxt.JSON(403, echo.Map{
-			"error_code": 2,
-			"message":    err,
-		})
+		return cxt.JSON(403, echo.Map{"error_code": 2, "message": err})
 	}
+
+	// delete error warnings from importer
+	for key := range ipt.errs.list {
+		if key.Unix() <= toTime.Unix() && key.Unix() >= fromTime.Unix() {
+			ipt.errs.deleteError(key)
+		}
+	}
+
 	jobs, err := seperateJobs(fromTime, toTime, jobNum)
 	if err != nil {
-		return cxt.JSON(403, echo.Map{
-			"error_code": 2,
-			"message":    err,
-		})
+		return cxt.JSON(403, echo.Map{"error_code": 2, "message": err})
 	}
 
 	Scheduler.receiveJobs(jobs)
@@ -108,5 +121,37 @@ func showStatus(c echo.Context) error {
 			}
 		}
 	}).ServeHTTP(c.Response(), c.Request())
+	return nil
+}
+
+func importApplePaymentData(c echo.Context) error {
+	idStr := c.FormValue("id")
+	id, err := strconv.Atoi(idStr)
+
+	c.Response().Header().Add("Access-Control-Allow-Origin", "*")
+
+	if err != nil {
+		c.JSON(403, echo.Map{"error_code": 2, "message": err})
+		return err
+	}
+
+	ipt.addJob(id)
+
+	c.JSON(200, echo.Map{"error_code": 0})
+	return nil
+}
+
+type errorInfo struct {
+	Date   string `json:"date"`
+	ConvID string `json:"conv_id"`
+}
+
+func getImporterErrors(c echo.Context) error {
+	c.Response().Header().Add("Access-Control-Allow-Origin", "*")
+	list := []errorInfo{}
+	for key, val := range ipt.errs.list {
+		list = append(list, errorInfo{Date: key.Format(time.RFC3339), ConvID: val})
+	}
+	c.JSON(200, echo.Map{"error_code": 0, "data": list})
 	return nil
 }
