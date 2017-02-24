@@ -1,0 +1,41 @@
+CREATE TABLE `affi_conversion_raw` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `raw_data` blob NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `conversion_id` char(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=1599423 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+
+CREATE TABLE `affi_conversion_201702` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `conversion_id` char(32) NOT NULL,
+  `conversion_time` timestamp NOT NULL,
+  `uid` bigint(20) unsigned NOT NULL,
+  `app_id` char(25) NOT NULL,
+  `customer_reference` char(10) NOT NULL,
+  `conversion_status` char(15) NOT NULL,
+  `conversion_value` decimal(10,2) NOT NULL COMMENT '用户给苹果的充值(美金)',
+  `conversion_value_origin` decimal(10,4) NOT NULL DEFAULT '0.00' COMMENT '用户给苹果的充值(本地货币)',
+  `publisher_commission` decimal(10,2) NOT NULL COMMENT '广告佣金(美金)',
+  `apple_payed_us` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT '苹果是否已经打款给我们',
+  `apple_amount` double NOT NULL DEFAULT '0.00' COMMENT '苹果给我们打款的金额(当地货币)',
+  `apple_amount_usd` double NOT NULL DEFAULT '0.00' COMMENT '苹果给我们打款的金额(美金), 汇率不同',
+  `apple_currency` char(6) NOT NULL DEFAULT '' COMMENT '苹果给我们打款的货币名称, CNY, USD 等',
+  `pay_user_amount` double NOT NULL DEFAULT '0.00' COMMENT '我们打给厂商的金额(美金), 每个厂商比例不同',
+  `payed_user` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT '我们是否已经打款给厂商',
+  `app_payment_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '打款给厂商的支付ID',
+  `pay_time` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'conversion 发生的 timestamp',
+  `pay_time_day` tinyint(3) unsigned NOT NULL DEFAULT '0',
+  `type` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT '0: SDK, 1: Web',
+  `at` char(32) NOT NULL DEFAULT '' COMMENT 'advertiser token',
+  `in_app` tinyint(3) unsigned NOT NULL DEFAULT '1',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `affi_conversion_conversion_id_unique` (`conversion_id`),
+  KEY `affi_conversion_uid_index` (`uid`),
+  KEY `affi_conversion_app_id_index` (`app_id`),
+  KEY `affi_conversion_day_index` (`pay_time_day`),
+  KEY `affi_conversion_payment_flag` (`app_id`, `apple_payed_us`, `payed_user`)
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
