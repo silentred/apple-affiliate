@@ -10,4 +10,4 @@ This program fetches apple affiliate conversion data
 
 ## Screenshot
 
-[pic](https://raw.githubusercontent.com/silentred/apple-affiliate/master/screenshot.png)
+![pic](https://raw.githubusercontent.com/silentred/apple-affiliate/master/screenshot.png)
