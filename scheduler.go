@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gizak/termui"
 	"github.com/golang/glog"
 )
 
@@ -136,6 +137,73 @@ func (sch *scheduler) printProcess() {
 			break
 		}
 	}
+
+	for _, w := range sch.workers {
+		totalItemNum += w.fetechedItemNum
+		totalSavedItemNum += w.savedItemNum
+	}
+
+	fmt.Printf("total: %d , total save: %d \n", totalItemNum, totalSavedItemNum)
+}
+
+func (sch *scheduler) printProcessWithUI() {
+	var allStop bool
+	var totalSavedItemNum, totalItemNum int
+
+	//start := time.Now()
+	//ticker := time.NewTicker(time.Second)
+
+	err := termui.Init()
+	if err != nil {
+		panic(err)
+	}
+	defer termui.Close()
+
+	// top bar
+	header := termui.NewPar("Press q to quit")
+	header.Height = 1
+	header.Width = 50
+	header.Border = false
+	header.TextBgColor = termui.ColorBlue
+	termui.Render(header)
+
+	//fmt.Printf("ID \t Status \t Offset \t Item \t SavedItem \t Range \n")
+	tableHeader := []string{"ID", "Status", "Offset", "Item", "SavedItem", "Range"}
+	table1 := termui.NewTable()
+	table1.FgColor = termui.ColorWhite
+	table1.BgColor = termui.ColorDefault
+	table1.Y = 1
+	table1.X = 0
+
+	// press q to quit
+	termui.Handle("/sys/kbd/q", func(termui.Event) {
+		termui.StopLoop()
+	})
+
+	termui.Handle("/timer/1s", func(e termui.Event) {
+		rows := make([][]string, 0, 10)
+		rows = append(rows, tableHeader)
+		for _, w := range sch.workers {
+			rows = append(rows, w.getStatus())
+			allStop = true
+			allStop = allStop && (w.status == statusStop)
+		}
+
+		table1.Rows = rows
+		table1.Analysis()
+		table1.SetSize()
+		termui.Render(table1)
+		//fmt.Println(time.Now().Sub(start))
+		if allStop {
+			return
+		}
+	})
+
+	// for range ticker.C {
+
+	// }
+
+	termui.Loop()
 
 	for _, w := range sch.workers {
 		totalItemNum += w.fetechedItemNum

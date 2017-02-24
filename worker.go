@@ -76,6 +76,17 @@ func (w *fetchWorker) statusName() string {
 	return statusNames[w.status]
 }
 
+func (w *fetchWorker) getStatus() []string {
+	return []string{
+		strconv.Itoa(w.id),
+		w.statusName(),
+		strconv.Itoa(w.currJob.offset),
+		strconv.Itoa(w.fetechedItemNum),
+		strconv.Itoa(w.savedItemNum),
+		w.currJob.String(),
+	}
+}
+
 func (w *fetchWorker) Run() {
 	w.status = statusRunning
 	for {

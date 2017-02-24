@@ -59,5 +59,6 @@ func startCmd() {
 	}
 
 	Scheduler.receiveJobs(jobs)
-	Scheduler.printProcess()
+	//Scheduler.printProcess()
+	Scheduler.printProcessWithUI()
 }
